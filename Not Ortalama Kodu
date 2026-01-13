@@ -1,0 +1,219 @@
+import tkinter as tk
+from tkinter import messagebox
+
+# --- MANTIK (HESAPLAMA) KISMI ---
+def hesapla():
+    try:
+        # Girişleri kontrol et
+        if not giris1.get() or not giris2.get():
+            messagebox.showwarning("Uyarı", "Lütfen tüm notları giriniz!")
+            return
+            
+        not1 = float(giris1.get())
+        not2 = float(giris2.get())
+        
+        # Notların geçerli aralıkta olduğunu kontrol et
+        if not1 < 0 or not1 > 100 or not2 < 0 or not2 > 100:
+            messagebox.showerror("Hata", "Notlar 0-100 arasında olmalıdır!")
+            return
+        
+        ortalama = (not1 + not2) / 2
+        
+        # Ortalamaya göre renk belirle
+        if ortalama >= 50:
+            renk = "#2E7D32"  # Yeşil
+            durum = "Geçti ✓"
+        else:
+            renk = "#C62828"  # Kırmızı
+            durum = "Kaldı ✗"
+        
+        # Sonuçları güncelle
+        sonuc_etiketi.config(text=f"Ortalama: {ortalama:.2f}", fg=renk)
+        durum_etiketi.config(text=f"Durum: {durum}", fg=renk)
+        
+        # İlerleme çubuğunu güncelle
+        ilerleme_cubugu['value'] = ortalama
+        
+        # İlerleme çubuğu rengini güncelle
+        if ortalama >= 50:
+            pencere.after(100, lambda: ilerleme_cubugu.config(background='#4CAF50'))
+        else:
+            pencere.after(100, lambda: ilerleme_cubugu.config(background='#F44336'))
+        
+    except ValueError:
+        messagebox.showerror("Hata", "Lütfen geçerli sayısal değerler giriniz!")
+
+def temizle():
+    giris1.delete(0, tk.END)
+    giris2.delete(0, tk.END)
+    sonuc_etiketi.config(text="Ortalama: 0.00", fg="#333333")
+    durum_etiketi.config(text="Durum: -", fg="#333333")
+    ilerleme_cubugu['value'] = 0
+    pencere.after(100, lambda: ilerleme_cubugu.config(background='#2196F3'))
+
+# --- GÖRSEL (Arayüz) KISMI ---
+pencere = tk.Tk()
+pencere.title("Not Hesaplama Sistemi")
+pencere.geometry("400x500")
+pencere.resizable(False, False)
+pencere.configure(bg='#f0f0f0')
+
+# Modern fontlar
+font_baslik = ("Arial", 16, "bold")
+font_normal = ("Arial", 11)
+font_sonuc = ("Arial", 14, "bold")
+
+# Başlık
+baslik_frame = tk.Frame(pencere, bg='#f0f0f0')
+baslik_frame.pack(pady=20)
+
+baslik = tk.Label(baslik_frame, text="NOT ORTALAMA HESAPLAYICI", 
+                  font=font_baslik, bg='#f0f0f0', fg='#333333')
+baslik.pack()
+
+# Ana içerik frame'i
+ana_frame = tk.Frame(pencere, bg='white', relief='groove', bd=2)
+ana_frame.pack(padx=30, pady=10, fill='both', expand=True)
+
+# 1. Not Girişi
+not1_frame = tk.Frame(ana_frame, bg='white')
+not1_frame.pack(pady=15, padx=20, fill='x')
+
+tk.Label(not1_frame, text="1. Sınav Notu:", 
+         font=font_normal, bg='white').pack(side='left', padx=(0, 10))
+
+giris1 = tk.Entry(not1_frame, font=font_normal, width=15, 
+                  justify='center', relief='solid', bd=1)
+giris1.pack(side='left')
+
+tk.Label(not1_frame, text="/100", 
+         font=font_normal, bg='white', fg='#666666').pack(side='left', padx=(5, 0))
+
+# 2. Not Girişi
+not2_frame = tk.Frame(ana_frame, bg='white')
+not2_frame.pack(pady=15, padx=20, fill='x')
+
+tk.Label(not2_frame, text="2. Sınav Notu:", 
+         font=font_normal, bg='white').pack(side='left', padx=(0, 10))
+
+giris2 = tk.Entry(not2_frame, font=font_normal, width=15, 
+                  justify='center', relief='solid', bd=1)
+giris2.pack(side='left')
+
+tk.Label(not2_frame, text="/100", 
+         font=font_normal, bg='white', fg='#666666').pack(side='left', padx=(5, 0))
+
+# Buton çerçevesi
+buton_frame = tk.Frame(ana_frame, bg='white')
+buton_frame.pack(pady=25)
+
+# Hesapla Butonu
+hesapla_buton = tk.Button(buton_frame, text="ORTALAMAYI HESAPLA", 
+                         font=("Arial", 10, "bold"),
+                         command=hesapla,
+                         bg='#2196F3', fg='white',
+                         activebackground='#1976D2',
+                         activeforeground='white',
+                         relief='flat',
+                         padx=20, pady=10,
+                         cursor='hand2')
+hesapla_buton.pack(side='left', padx=(0, 10))
+
+# Temizle Butonu
+temizle_buton = tk.Button(buton_frame, text="TEMİZLE", 
+                         font=("Arial", 10, "bold"),
+                         command=temizle,
+                         bg='#757575', fg='white',
+                         activebackground='#616161',
+                         activeforeground='white',
+                         relief='flat',
+                         padx=20, pady=10,
+                         cursor='hand2')
+temizle_buton.pack(side='left')
+
+# Sonuç alanı
+sonuc_frame = tk.Frame(ana_frame, bg='white')
+sonuc_frame.pack(pady=20, padx=20, fill='x')
+
+# İlerleme çubuğu
+ilerleme_cubugu = tk.Canvas(sonuc_frame, height=20, bg='#E0E0E0', 
+                           highlightthickness=0)
+ilerleme_cubugu.pack(fill='x', pady=(0, 10))
+
+# İlerleme çubuğu dolgu rengi (başlangıçta mavi)
+ilerleme_dolgu = ilerleme_cubugu.create_rectangle(0, 0, 0, 20, 
+                                                 fill='#2196F3', 
+                                                 outline='#2196F3')
+
+# İlerleme çubuğunu güncelleyen fonksiyon
+def ilerleme_guncelle(deger):
+    genislik = ilerleme_cubugu.winfo_width()
+    dolgu_genislik = (deger / 100) * genislik
+    ilerleme_cubugu.coords(ilerleme_dolgu, 0, 0, dolgu_genislik, 20)
+    
+    # Renk güncellemesi
+    if deger >= 50:
+        ilerleme_cubugu.itemconfig(ilerleme_dolgu, fill='#4CAF50', outline='#4CAF50')
+    else:
+        ilerleme_cubugu.itemconfig(ilerleme_dolgu, fill='#F44336', outline='#F44336')
+
+# Sonuç etiketleri
+sonuc_etiketi = tk.Label(sonuc_frame, text="Ortalama: 0.00", 
+                        font=font_sonuc, bg='white', fg='#333333')
+sonuc_etiketi.pack()
+
+durum_etiketi = tk.Label(sonuc_frame, text="Durum: -", 
+                        font=font_normal, bg='white', fg='#333333')
+durum_etiketi.pack(pady=5)
+
+# Hesapla fonksiyonunda ilerleme çubuğu güncellemesi
+def hesapla_ve_guncelle():
+    hesapla()
+    pencere.update_idletasks()  # Pencereyi güncelle
+    try:
+        ortalama = float(sonuc_etiketi.cget("text").split(": ")[1])
+        ilerleme_guncelle(ortalama)
+    except:
+        pass
+
+# Temizle fonksiyonunda ilerleme çubuğu güncellemesi
+def temizle_ve_guncelle():
+    temizle()
+    ilerleme_guncelle(0)
+    ilerleme_cubugu.itemconfig(ilerleme_dolgu, fill='#2196F3', outline='#2196F3')
+
+# Butonları güncelle
+hesapla_buton.config(command=hesapla_ve_guncelle)
+temizle_buton.config(command=temizle_ve_guncelle)
+
+# Pencere boyutu değiştiğinde ilerleme çubuğunu güncelle
+def pencere_boyutu_degisti(event):
+    try:
+        ortalama_text = sonuc_etiketi.cget("text")
+        if "Ortalama: " in ortalama_text:
+            ortalama = float(ortalama_text.split(": ")[1])
+            ilerleme_guncelle(ortalama)
+    except:
+        pass
+
+pencere.bind('<Configure>', pencere_boyutu_degisti)
+
+# Açıklama
+aciklama_frame = tk.Frame(pencere, bg='#f0f0f0')
+aciklama_frame.pack(pady=10)
+
+aciklama = tk.Label(aciklama_frame, 
+                   text="Not: Notlar 0-100 arasında olmalıdır.\n50 ve üzeri ortalamalar geçer kabul edilir.",
+                   font=("Arial", 9), 
+                   fg='#666666',
+                   bg='#f0f0f0',
+                   justify='center')
+aciklama.pack()
+
+# Giriş alanlarına odaklan
+giris1.focus()
+
+# Enter tuşu ile hesaplama
+pencere.bind('<Return>', lambda event: hesapla_ve_guncelle())
+
+pencere.mainloop()
