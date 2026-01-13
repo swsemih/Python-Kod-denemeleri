@@ -1,0 +1,484 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import random
+import string
+import secrets
+import math
+import hashlib
+
+class CyberPassPro:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("CyberPass Pro v3.0")
+        self.root.geometry("650x800")
+        self.root.configure(bg='#0f1419')
+        self.root.resizable(False, False)
+        
+        # Değişkenler
+        self.password_length = tk.IntVar(value=16)
+        self.include_uppercase = tk.BooleanVar(value=True)
+        self.include_lowercase = tk.BooleanVar(value=True)
+        self.include_digits = tk.BooleanVar(value=True)
+        self.include_symbols = tk.BooleanVar(value=True)
+        self.exclude_similar = tk.BooleanVar(value=True)
+        self.generated_password = ""
+        
+        # Renk paleti
+        self.colors = {
+            'bg': '#0f1419',
+            'card': '#1a2129',
+            'primary': '#00d4aa',
+            'secondary': '#2563eb',
+            'danger': '#ef4444',
+            'warning': '#f59e0b',
+            'text': '#e5e7eb',
+            'text_secondary': '#9ca3af'
+        }
+        
+        self.setup_ui()
+        
+    def setup_ui(self):
+        # Başlık ve logo
+        title_frame = tk.Frame(self.root, bg=self.colors['bg'])
+        title_frame.pack(pady=(25, 15))
+        
+        # Logo
+        logo_canvas = tk.Canvas(title_frame, width=60, height=60, bg=self.colors['bg'], highlightthickness=0)
+        logo_canvas.pack()
+        
+        # Şifre sembolü çizimi
+        logo_canvas.create_oval(10, 10, 50, 50, outline=self.colors['primary'], width=3)
+        logo_canvas.create_rectangle(20, 20, 40, 40, outline=self.colors['primary'], width=3)
+        logo_canvas.create_line(15, 15, 25, 25, fill=self.colors['primary'], width=2)
+        logo_canvas.create_line(45, 15, 35, 25, fill=self.colors['primary'], width=2)
+        logo_canvas.create_line(15, 45, 25, 35, fill=self.colors['primary'], width=2)
+        logo_canvas.create_line(45, 45, 35, 35, fill=self.colors['primary'], width=2)
+        
+        # Başlık
+        tk.Label(title_frame, text="CYBERPASS PRO", 
+                font=("Segoe UI", 28, "bold"), 
+                bg=self.colors['bg'], fg=self.colors['text']).pack(pady=(10, 0))
+        
+        tk.Label(title_frame, text="Advanced Password Generator", 
+                font=("Segoe UI", 12), 
+                bg=self.colors['bg'], fg=self.colors['text_secondary']).pack()
+        
+        # Ana konteyner
+        main_container = tk.Frame(self.root, bg=self.colors['bg'])
+        main_container.pack(pady=10, padx=20, fill='both', expand=True)
+        
+        # Üretilen şifre kartı
+        password_card = tk.Frame(main_container, bg=self.colors['card'], relief='flat', bd=0)
+        password_card.pack(pady=(0, 15), padx=10, fill='x')
+        password_card.config(highlightbackground=self.colors['primary'], highlightthickness=1)
+        
+        # Şifre alanı
+        password_field = tk.Frame(password_card, bg=self.colors['card'])
+        password_field.pack(pady=20, padx=20, fill='x')
+        
+        self.password_entry = tk.Entry(password_field, 
+                                      font=("Consolas", 16), 
+                                      bd=0, relief='flat',
+                                      bg=self.colors['bg'], fg=self.colors['primary'],
+                                      justify='center', readonlybackground=self.colors['bg'])
+        self.password_entry.pack(fill='x', ipady=12)
+        self.password_entry.config(state='readonly')
+        
+        # Kopyala butonu
+        copy_frame = tk.Frame(password_card, bg=self.colors['card'])
+        copy_frame.pack(pady=(0, 15), padx=20)
+        
+        self.copy_btn = tk.Button(copy_frame, text="📋 Copy to Clipboard",
+                                command=self.copy_to_clipboard,
+                                font=("Segoe UI", 10),
+                                bg=self.colors['primary'], fg=self.colors['bg'],
+                                activebackground='#00b894',
+                                activeforeground=self.colors['bg'],
+                                bd=0, padx=20, pady=8,
+                                cursor='hand2')
+        self.copy_btn.pack()
+        
+        # Kontrol paneli
+        control_card = tk.Frame(main_container, bg=self.colors['card'], relief='flat', bd=0)
+        control_card.pack(pady=15, padx=10, fill='x')
+        control_card.config(highlightbackground=self.colors['text_secondary'], highlightthickness=1)
+        
+        # Uzunluk kontrolü
+        length_frame = tk.Frame(control_card, bg=self.colors['card'])
+        length_frame.pack(pady=15, padx=20, fill='x')
+        
+        length_header = tk.Frame(length_frame, bg=self.colors['card'])
+        length_header.pack(fill='x', pady=(0, 10))
+        
+        tk.Label(length_header, text="Password Length", 
+                font=("Segoe UI", 11, "bold"), 
+                bg=self.colors['card'], fg=self.colors['text']).pack(side='left')
+        
+        self.length_label = tk.Label(length_header, 
+                                    textvariable=self.password_length,
+                                    font=("Segoe UI", 11, "bold"), 
+                                    bg=self.colors['card'], fg=self.colors['primary'])
+        self.length_label.pack(side='right')
+        
+        self.length_slider = ttk.Scale(length_frame, 
+                                      from_=8, to=64, 
+                                      variable=self.password_length,
+                                      command=self.update_length)
+        self.length_slider.pack(fill='x')
+        
+        min_max_frame = tk.Frame(length_frame, bg=self.colors['card'])
+        min_max_frame.pack(fill='x', pady=(5, 0))
+        
+        tk.Label(min_max_frame, text="8", font=("Segoe UI", 9), 
+                bg=self.colors['card'], fg=self.colors['text_secondary']).pack(side='left')
+        tk.Label(min_max_frame, text="64", font=("Segoe UI", 9), 
+                bg=self.colors['card'], fg=self.colors['text_secondary']).pack(side='right')
+        
+        # Karakter seçenekleri
+        options_frame = tk.Frame(control_card, bg=self.colors['card'])
+        options_frame.pack(pady=15, padx=20, fill='x')
+        
+        tk.Label(options_frame, text="Character Options", 
+                font=("Segoe UI", 11, "bold"), 
+                bg=self.colors['card'], fg=self.colors['text']).pack(anchor='w', pady=(0, 10))
+        
+        # Checkbox'ları oluştur
+        self.create_checkbox(options_frame, "Uppercase Letters (A-Z)", self.include_uppercase)
+        self.create_checkbox(options_frame, "Lowercase Letters (a-z)", self.include_lowercase)
+        self.create_checkbox(options_frame, "Digits (0-9)", self.include_digits)
+        self.create_checkbox(options_frame, "Symbols (!@#$%&*)", self.include_symbols)
+        self.create_checkbox(options_frame, "Exclude Similar Characters (i, l, 1, o, 0, O)", self.exclude_similar)
+        
+        # Güvenlik göstergesi
+        security_card = tk.Frame(main_container, bg=self.colors['card'], relief='flat', bd=0)
+        security_card.pack(pady=15, padx=10, fill='x')
+        security_card.config(highlightbackground=self.colors['text_secondary'], highlightthickness=1)
+        
+        security_frame = tk.Frame(security_card, bg=self.colors['card'])
+        security_frame.pack(pady=15, padx=20, fill='x')
+        
+        security_header = tk.Frame(security_frame, bg=self.colors['card'])
+        security_header.pack(fill='x', pady=(0, 10))
+        
+        tk.Label(security_header, text="Security Strength", 
+                font=("Segoe UI", 11, "bold"), 
+                bg=self.colors['card'], fg=self.colors['text']).pack(side='left')
+        
+        self.strength_label = tk.Label(security_header, text="", 
+                                      font=("Segoe UI", 11, "bold"), 
+                                      bg=self.colors['card'], fg=self.colors['primary'])
+        self.strength_label.pack(side='right')
+        
+        # Güvenlik çubuğu
+        self.security_bar = tk.Canvas(security_frame, height=12, 
+                                     bg='#374151', highlightthickness=0)
+        self.security_bar.pack(fill='x', pady=(0, 5))
+        
+        # Güvenlik seviyeleri
+        levels_frame = tk.Frame(security_frame, bg=self.colors['card'])
+        levels_frame.pack(fill='x')
+        
+        tk.Label(levels_frame, text="Weak", font=("Segoe UI", 9), 
+                bg=self.colors['card'], fg=self.colors['text_secondary']).pack(side='left')
+        tk.Label(levels_frame, text="Strong", font=("Segoe UI", 9), 
+                bg=self.colors['card'], fg=self.colors['text_secondary']).pack(side='right')
+        
+        # İstatistikler
+        stats_frame = tk.Frame(security_frame, bg=self.colors['card'])
+        stats_frame.pack(fill='x', pady=(15, 0))
+        
+        self.entropy_label = tk.Label(stats_frame, text="Entropy: 0 bits",
+                                     font=("Segoe UI", 10),
+                                     bg=self.colors['card'], fg=self.colors['text_secondary'])
+        self.entropy_label.pack(anchor='w')
+        
+        self.time_label = tk.Label(stats_frame, text="Time to crack: Instant",
+                                  font=("Segoe UI", 10),
+                                  bg=self.colors['card'], fg=self.colors['text_secondary'])
+        self.time_label.pack(anchor='w', pady=(5, 0))
+        
+        # Butonlar
+        button_frame = tk.Frame(main_container, bg=self.colors['bg'])
+        button_frame.pack(pady=20, padx=10, fill='x')
+        
+        generate_btn = tk.Button(button_frame, text="⚡ GENERATE SECURE PASSWORD",
+                               command=self.generate_password,
+                               font=("Segoe UI", 12, "bold"),
+                               bg=self.colors['secondary'], fg='white',
+                               activebackground='#1d4ed8',
+                               activeforeground='white',
+                               bd=0, padx=30, pady=15,
+                               cursor='hand2')
+        generate_btn.pack(fill='x')
+        
+        # Hızlı uzunluk butonları
+        quick_frame = tk.Frame(main_container, bg=self.colors['bg'])
+        quick_frame.pack(pady=(0, 20), padx=10, fill='x')
+        
+        tk.Label(quick_frame, text="Quick Length:", 
+                font=("Segoe UI", 10),
+                bg=self.colors['bg'], fg=self.colors['text_secondary']).pack(side='left')
+        
+        for length in [12, 16, 20, 24]:
+            btn = tk.Button(quick_frame, text=str(length),
+                          command=lambda l=length: self.set_length(l),
+                          font=("Segoe UI", 9),
+                          bg=self.colors['card'], fg=self.colors['text'],
+                          activebackground=self.colors['primary'],
+                          activeforeground=self.colors['bg'],
+                          bd=0, padx=10, pady=5)
+            btn.pack(side='left', padx=(10, 0))
+        
+        # Bilgi
+        info_frame = tk.Frame(main_container, bg=self.colors['bg'])
+        info_frame.pack(pady=(10, 20), padx=10, fill='x')
+        
+        info_text = "🔒 Uses cryptographically secure random number generation\n" \
+                   "📊 Real-time entropy and security analysis\n" \
+                   "⚡ No external dependencies required"
+        
+        tk.Label(info_frame, text=info_text, 
+                font=("Segoe UI", 9),
+                bg=self.colors['bg'], fg=self.colors['text_secondary'],
+                justify='left').pack(anchor='w')
+        
+        # Başlangıçta bir şifre üret
+        self.generate_password()
+        
+    def create_checkbox(self, parent, text, variable):
+        frame = tk.Frame(parent, bg=self.colors['card'])
+        frame.pack(fill='x', pady=3)
+        
+        # Özel checkbox
+        def toggle():
+            variable.set(not variable.get())
+            self.update_checkbox_appearance(btn, text, variable.get())
+            if variable.get():
+                self.generate_password()
+        
+        btn = tk.Button(frame, text=f"  {text}",
+                       font=("Segoe UI", 10),
+                       bg=self.colors['card'], fg=self.colors['text'],
+                       activebackground=self.colors['card'],
+                       activeforeground=self.colors['text'],
+                       bd=0, anchor='w',
+                       cursor='hand2',
+                       command=toggle)
+        btn.pack(fill='x')
+        
+        # İlk görünümü güncelle
+        self.update_checkbox_appearance(btn, text, variable.get())
+        
+    def update_checkbox_appearance(self, button, text, checked):
+        if checked:
+            button.config(text=f"✓ {text}", fg=self.colors['primary'])
+        else:
+            button.config(text=f"  {text}", fg=self.colors['text'])
+    
+    def set_length(self, length):
+        self.password_length.set(length)
+        self.length_slider.set(length)
+        self.generate_password()
+    
+    def update_length(self, value):
+        self.password_length.set(int(float(value)))
+        self.generate_password()
+    
+    def generate_password(self):
+        # Karakter setlerini oluştur
+        uppercase = string.ascii_uppercase
+        lowercase = string.ascii_lowercase
+        digits = string.digits
+        symbols = "!@#$%&*+-=?^_~"
+        
+        # Benzer karakterleri hariç tut
+        if self.exclude_similar.get():
+            uppercase = uppercase.replace('O', '').replace('I', '').replace('L', '')
+            lowercase = lowercase.replace('l', '').replace('i', '').replace('o', '')
+            digits = digits.replace('0', '').replace('1', '')
+        
+        # Karakter setini birleştir
+        charset = ""
+        if self.include_uppercase.get():
+            charset += uppercase
+        if self.include_lowercase.get():
+            charset += lowercase
+        if self.include_digits.get():
+            charset += digits
+        if self.include_symbols.get():
+            charset += symbols
+        
+        # En az bir karakter seti seçildiğinden emin ol
+        if not charset:
+            messagebox.showwarning("Warning", 
+                                 "Please select at least one character set!")
+            return
+        
+        # Güvenli rastgele şifre üret
+        length = self.password_length.get()
+        
+        # secrets modülü ile kriptografik olarak güvenli şifre
+        password = ''.join(secrets.choice(charset) for _ in range(length))
+        self.generated_password = password
+        
+        # Şifreyi göster
+        self.password_entry.config(state='normal')
+        self.password_entry.delete(0, tk.END)
+        self.password_entry.insert(0, password)
+        self.password_entry.config(state='readonly')
+        
+        # Güvenlik analizi
+        self.analyze_password(password, charset)
+    
+    def analyze_password(self, password, charset):
+        # Güvenlik puanı hesapla
+        score = 0
+        length = len(password)
+        
+        # Uzunluk puanı (max 40)
+        length_score = min(40, length * 2)
+        score += length_score
+        
+        # Karakter çeşitliliği puanı (max 30)
+        char_types = 0
+        if any(c.isupper() for c in password):
+            char_types += 1
+        if any(c.islower() for c in password):
+            char_types += 1
+        if any(c.isdigit() for c in password):
+            char_types += 1
+        if any(c in "!@#$%&*+-=?^_~" for c in password):
+            char_types += 1
+        
+        diversity_score = char_types * 7.5
+        score += diversity_score
+        
+        # Entropi puanı (max 30)
+        charset_size = len(charset)
+        entropy = length * math.log2(charset_size) if charset_size > 0 else 0
+        entropy_score = min(30, entropy / 4)
+        score += entropy_score
+        
+        # Skoru sınırla
+        score = min(100, score)
+        
+        # Güvenlik çubuğunu güncelle
+        bar_width = self.security_bar.winfo_width() or 300
+        fill_width = (score / 100) * bar_width
+        self.security_bar.delete('all')
+        
+        # Renk belirle
+        if score >= 80:
+            color = '#10b981'  # Emerald
+            level = "VERY STRONG"
+        elif score >= 65:
+            color = '#3b82f6'  # Blue
+            level = "STRONG"
+        elif score >= 50:
+            color = '#f59e0b'  # Amber
+            level = "GOOD"
+        elif score >= 30:
+            color = '#f97316'  # Orange
+            level = "FAIR"
+        else:
+            color = '#ef4444'  # Red
+            level = "WEAK"
+        
+        self.security_bar.create_rectangle(0, 0, fill_width, 12, fill=color, outline='')
+        self.strength_label.config(text=f"{level} ({int(score)}/100)", fg=color)
+        
+        # Entropiyi göster
+        self.entropy_label.config(text=f"Entropy: {entropy:.1f} bits")
+        
+        # Kırılma süresini hesapla
+        self.calculate_crack_time(entropy)
+        
+        # İstatistikleri güncelle
+        self.update_stats(password, charset_size, entropy)
+    
+    def calculate_crack_time(self, entropy):
+        # Basitleştirilmiş kırılma süresi hesaplaması
+        if entropy == 0:
+            self.time_label.config(text="Time to crack: Instant")
+        elif entropy < 28:
+            self.time_label.config(text="Time to crack: Less than a second")
+        elif entropy < 36:
+            self.time_label.config(text="Time to crack: A few seconds")
+        elif entropy < 44:
+            self.time_label.config(text="Time to crack: A few minutes")
+        elif entropy < 56:
+            self.time_label.config(text="Time to crack: Several hours")
+        elif entropy < 64:
+            self.time_label.config(text="Time to crack: Several days")
+        elif entropy < 80:
+            self.time_label.config(text="Time to crack: Years")
+        elif entropy < 100:
+            self.time_label.config(text="Time to crack: Centuries")
+        else:
+            self.time_label.config(text="Time to crack: Millions of years")
+    
+    def update_stats(self, password, charset_size, entropy):
+        # İstatistikleri panelde göstermek için
+        pass
+    
+    def copy_to_clipboard(self):
+        if self.generated_password:
+            # Tkinter'ın panosunu kullan
+            self.root.clipboard_clear()
+            self.root.clipboard_append(self.generated_password)
+            self.root.update()  # Panoyu güncelle
+            
+            # Geri bildirim
+            original_text = self.copy_btn.cget("text")
+            self.copy_btn.config(text="✓ Copied!", bg='#10b981')
+            
+            # 2 saniye sonra eski haline dön
+            self.root.after(2000, lambda: [
+                self.copy_btn.config(text="📋 Copy to Clipboard", bg=self.colors['primary'])
+            ])
+            
+            # Şifre alanında da geri bildirim
+            original_pass = self.password_entry.get()
+            self.password_entry.config(state='normal')
+            self.password_entry.delete(0, tk.END)
+            self.password_entry.insert(0, "✓ Copied to clipboard!")
+            self.password_entry.config(state='readonly')
+            
+            self.root.after(1500, lambda: [
+                self.password_entry.config(state='normal'),
+                self.password_entry.delete(0, tk.END),
+                self.password_entry.insert(0, original_pass),
+                self.password_entry.config(state='readonly')
+            ])
+        else:
+            messagebox.showwarning("Warning", "No password to copy!")
+
+def main():
+    root = tk.Tk()
+    
+    # Pencere stilini ayarla
+    root.tk_setPalette(background='#0f1419', foreground='#e5e7eb',
+                      activeBackground='#1a2129', activeForeground='#00d4aa')
+    
+    # Pencereyi ekranın ortasına yerleştir
+    window_width = 650
+    window_height = 800
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    center_x = int(screen_width/2 - window_width/2)
+    center_y = int(screen_height/2 - window_height/2)
+    root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
+    
+    # Uygulamayı başlat
+    app = CyberPassPro(root)
+    
+    # Pencere kapatıldığında panoyu temizle
+    def on_closing():
+        root.clipboard_clear()
+        root.destroy()
+    
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
